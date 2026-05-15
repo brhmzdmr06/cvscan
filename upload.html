@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CVScan.ai — Upload Your CV</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0c0c;
+    --surface: #141414;
+    --border: #222;
+    --accent: #d4ff00;
+    --text: #f0f0f0;
+    --muted: #666;
+    --error: #ff4444;
+    --success: #00cc66;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 48px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .logo span { color: var(--text); }
+
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 64px 48px;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 56px;
+    line-height: 0.95;
+    margin-bottom: 12px;
+  }
+
+  h1 em { font-style: normal; color: var(--accent); }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 15px;
+    margin-bottom: 48px;
+    font-weight: 300;
+  }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 1px dashed var(--border);
+    padding: 48px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    margin-bottom: 24px;
+  }
+
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(212,255,0,0.03);
+  }
+
+  .upload-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .upload-icon {
+    font-size: 40px;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .upload-zone h3 {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+
+  .upload-zone p {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .file-selected {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    background: rgba(212,255,0,0.07);
+    border: 1px solid rgba(212,255,0,0.2);
+    margin-bottom: 24px;
+    font-size: 14px;
+  }
+
+  .file-selected.show { display: flex; }
+  .file-selected .fname { color: var(--accent); font-weight: 500; }
+  .file-remove { margin-left: auto; cursor: pointer; color: var(--muted); font-size: 18px; line-height: 1; }
+  .file-remove:hover { color: var(--error); }
+
+  /* Form fields */
+  .field {
+    margin-bottom: 20px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .field input, .field textarea, .field select {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 14px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+  }
+
+  .field input:focus, .field textarea:focus, .field select:focus {
+    border-color: var(--accent);
+  }
+
+  .field textarea { min-height: 80px; }
+
+  .field select option { background: #1a1a1a; }
+
+  .btn-analyze {
+    width: 100%;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: background 0.15s, transform 0.15s;
+    margin-top: 8px;
+  }
+
+  .btn-analyze:hover:not(:disabled) {
+    background: #c4ef00;
+    transform: translateY(-1px);
+  }
+
+  .btn-analyze:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Loading state */
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 64px 0;
+  }
+
+  .loading.show { display: block; }
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 24px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading p { color: var(--muted); font-size: 15px; }
+  .loading .step-indicator { color: var(--accent); font-size: 13px; margin-top: 8px; }
+
+  /* Results */
+  .results {
+    display: none;
+  }
+
+  .results.show { display: block; }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .results-header h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+  }
+
+  .score-badge {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .score-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-align: right;
+  }
+
+  .result-section {
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .result-section:last-child { border-bottom: none; }
+
+  .result-section h3 {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .result-section p, .result-section li {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #ccc;
+    font-weight: 300;
+  }
+
+  .result-section ul {
+    padding-left: 20px;
+  }
+
+  .result-section li { margin-bottom: 8px; }
+
+  .tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    margin: 4px 4px 4px 0;
+  }
+
+  .tag.good { border-color: var(--success); color: var(--success); }
+  .tag.bad { border-color: var(--error); color: var(--error); }
+
+  .btn-copy {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    margin-top: 24px;
+  }
+
+  .btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-restart {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 10px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    margin-left: 12px;
+    transition: border-color 0.2s;
+  }
+
+  .btn-restart:hover { border-color: var(--text); color: var(--text); }
+
+  .error-msg {
+    display: none;
+    background: rgba(255,68,68,0.08);
+    border: 1px solid rgba(255,68,68,0.3);
+    padding: 16px 20px;
+    color: #ff8888;
+    font-size: 14px;
+    margin-top: 16px;
+  }
+
+  .error-msg.show { display: block; }
+
+  @media (max-width: 640px) {
+    nav { padding: 20px 24px; }
+    main { padding: 40px 24px; }
+    h1 { font-size: 40px; }
+    .upload-zone { padding: 32px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo">CV<span>Scan</span>.ai</a>
+  <div style="font-size:13px;color:var(--muted);">Payment verified ✓</div>
+</nav>
+
+<main>
+
+  <!-- Upload Form -->
+  <div id="formSection">
+    <h1>Upload your <em>CV</em></h1>
+    <p class="subtitle">PDF format · Analyzed in 60 seconds · Never stored</p>
+
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept=".pdf" />
+      <span class="upload-icon">📄</span>
+      <h3>Drop your CV here or click to browse</h3>
+      <p>PDF only · Max 10MB</p>
+    </div>
+
+    <div class="file-selected" id="fileSelected">
+      <span>📄</span>
+      <span class="fname" id="fileName"></span>
+      <span class="file-remove" id="fileRemove">×</span>
+    </div>
+
+    <div class="field">
+      <label>Target Role (optional but recommended)</label>
+      <input type="text" id="targetRole" placeholder="e.g. Senior Product Manager at a tech startup" />
+    </div>
+
+    <div class="field">
+      <label>Years of Experience</label>
+      <select id="experience">
+        <option value="">Select...</option>
+        <option value="0-1">0–1 years (Entry level)</option>
+        <option value="2-4">2–4 years</option>
+        <option value="5-9">5–9 years</option>
+        <option value="10+">10+ years</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Anything specific you want us to focus on? (optional)</label>
+      <textarea id="focusArea" placeholder="e.g. I keep getting rejected at the screening stage. Not sure if my summary is weak or if my skills section is missing keywords."></textarea>
+    </div>
+
+    <button class="btn-analyze" id="analyzeBtn" disabled>
+      Upload CV &amp; Analyze →
+    </button>
+
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loadingSection">
+    <div class="spinner"></div>
+    <p>Analyzing your CV...</p>
+    <p class="step-indicator" id="stepIndicator">Reading document</p>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="resultsSection">
+    <div class="results-header">
+      <h2>Your CV Report</h2>
+      <div>
+        <div class="score-badge" id="scoreDisplay">—</div>
+        <div class="score-label">Overall Score</div>
+      </div>
+    </div>
+    <div id="resultsContent"></div>
+    <div>
+      <button class="btn-copy" id="copyBtn">Copy Full Report</button>
+      <button class="btn-restart" id="restartBtn">Analyze Another CV</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  const fileInput = document.getElementById('fileInput');
+  const uploadZone = document.getElementById('uploadZone');
+  const fileSelected = document.getElementById('fileSelected');
+  const fileName = document.getElementById('fileName');
+  const fileRemove = document.getElementById('fileRemove');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const formSection = document.getElementById('formSection');
+  const loadingSection = document.getElementById('loadingSection');
+  const resultsSection = document.getElementById('resultsSection');
+  const errorMsg = document.getElementById('errorMsg');
+  const stepIndicator = document.getElementById('stepIndicator');
+
+  let selectedFile = null;
+  let fullReportText = '';
+
+  // Drag & drop
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type === 'application/pdf') setFile(f);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) setFile(fileInput.files[0]);
+  });
+
+  fileRemove.addEventListener('click', () => {
+    selectedFile = null;
+    fileInput.value = '';
+    fileSelected.classList.remove('show');
+    analyzeBtn.disabled = true;
+  });
+
+  function setFile(f) {
+    if (f.size > 10 * 1024 * 1024) { showError('File too large. Max 10MB.'); return; }
+    selectedFile = f;
+    fileName.textContent = f.name;
+    fileSelected.classList.add('show');
+    analyzeBtn.disabled = false;
+  }
+
+  // Analyze
+  analyzeBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    errorMsg.classList.remove('show');
+
+    // Show loading
+    formSection.style.display = 'none';
+    loadingSection.classList.add('show');
+
+    // Animate steps
+    const steps = ['Reading document...', 'Extracting content...', 'Analyzing structure...', 'Checking ATS compatibility...', 'Generating recommendations...'];
+    let si = 0;
+    const stepTimer = setInterval(() => {
+      if (si < steps.length) stepIndicator.textContent = steps[si++];
+    }, 2500);
+
+    try {
+      // Convert PDF to base64
+      const base64 = await fileToBase64(selectedFile);
+      const targetRole = document.getElementById('targetRole').value.trim();
+      const experience = document.getElementById('experience').value;
+      const focusArea = document.getElementById('focusArea').value.trim();
+
+      const systemPrompt = `You are an expert CV/resume analyst and career coach with 20 years of experience in recruitment across industries. You give brutally honest, actionable feedback. You understand ATS systems, keyword optimization, and what recruiters actually look for.
+
+Always respond in this exact JSON format:
+{
+  "overall_score": <number 0-100>,
+  "score_label": "<Poor|Weak|Average|Good|Strong|Excellent>",
+  "summary": "<2-3 sentence honest overview>",
+  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
+  "weaknesses": ["<weakness 1>", "<weakness 2>", "<weakness 3>"],
+  "ats_score": <number 0-100>,
+  "ats_notes": "<1-2 sentences about ATS compatibility>",
+  "missing_keywords": ["<keyword 1>", "<keyword 2>", "<keyword 3>", "<keyword 4>", "<keyword 5>"],
+  "rewrite_suggestions": [
+    {"original": "<original line>", "improved": "<improved version>", "reason": "<why>"},
+    {"original": "<original line>", "improved": "<improved version>", "reason": "<why>"}
+  ],
+  "action_plan": ["<priority action 1>", "<priority action 2>", "<priority action 3>", "<priority action 4>"],
+  "role_fit": "<if target role provided: honest assessment of fit. If not: general employability assessment>"
+}`;
+
+      const userContent = [
+        {
+          type: "document",
+          source: { type: "base64", media_type: "application/pdf", data: base64 }
+        },
+        {
+          type: "text",
+          text: `Please analyze this CV.${targetRole ? ` Target role: ${targetRole}.` : ''}${experience ? ` Years of experience: ${experience}.` : ''}${focusArea ? ` User's specific concern: ${focusArea}` : ''}\n\nRespond ONLY with valid JSON, no markdown, no backticks.`
+        }
+      ];
+
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: systemPrompt,
+          content: userContent
+        })
+      });
+
+      clearInterval(stepTimer);
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Analysis failed. Please try again.');
+      }
+
+      const data = await response.json();
+      clearInterval(stepTimer);
+      renderResults(data);
+
+    } catch (err) {
+      clearInterval(stepTimer);
+      loadingSection.classList.remove('show');
+      formSection.style.display = 'block';
+      showError(err.message || 'Something went wrong. Please try again.');
+    }
+  });
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderResults(data) {
+    loadingSection.classList.remove('show');
+    resultsSection.classList.add('show');
+
+    document.getElementById('scoreDisplay').textContent = data.overall_score + '/100';
+
+    const scoreColor = data.overall_score >= 70 ? 'var(--success)' : data.overall_score >= 50 ? '#ffaa00' : 'var(--error)';
+    document.getElementById('scoreDisplay').style.color = scoreColor;
+
+    // Build full report text for copy
+    fullReportText = `CVScan.ai Report\n${'='.repeat(40)}\n\nOverall Score: ${data.overall_score}/100 (${data.score_label})\n\nSummary:\n${data.summary}\n\nStrengths:\n${data.strengths.map(s => '• ' + s).join('\n')}\n\nWeaknesses:\n${data.weaknesses.map(w => '• ' + w).join('\n')}\n\nATS Score: ${data.ats_score}/100\n${data.ats_notes}\n\nMissing Keywords:\n${data.missing_keywords.join(', ')}\n\nAction Plan:\n${data.action_plan.map((a,i) => `${i+1}. ${a}`).join('\n')}\n\nRole Fit:\n${data.role_fit}`;
+
+    const html = `
+      <div class="result-section">
+        <h3>Summary</h3>
+        <p>${data.summary}</p>
+        <div style="margin-top:12px">
+          <span class="tag good">Score: ${data.overall_score}/100</span>
+          <span class="tag ${data.ats_score >= 60 ? 'good' : 'bad'}">ATS: ${data.ats_score}/100</span>
+        </div>
+      </div>
+
+      <div class="result-section">
+        <h3>Strengths</h3>
+        <ul>${data.strengths.map(s => `<li>${s}</li>`).join('')}</ul>
+      </div>
+
+      <div class="result-section">
+        <h3>Weaknesses</h3>
+        <ul>${data.weaknesses.map(w => `<li>${w}</li>`).join('')}</ul>
+      </div>
+
+      <div class="result-section">
+        <h3>ATS Compatibility — ${data.ats_score}/100</h3>
+        <p>${data.ats_notes}</p>
+        <div style="margin-top:16px">
+          <div style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Missing Keywords</div>
+          ${data.missing_keywords.map(k => `<span class="tag bad">${k}</span>`).join('')}
+        </div>
+      </div>
+
+      ${data.rewrite_suggestions && data.rewrite_suggestions.length ? `
+      <div class="result-section">
+        <h3>Rewrite Suggestions</h3>
+        ${data.rewrite_suggestions.map(r => `
+          <div style="margin-bottom:20px;padding:16px;border:1px solid var(--border);">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Original</div>
+            <p style="color:#888;font-size:14px;margin-bottom:12px">${r.original}</p>
+            <div style="font-size:12px;color:var(--success);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Improved</div>
+            <p style="color:#ccc;font-size:14px;margin-bottom:8px">${r.improved}</p>
+            <p style="font-size:12px;color:var(--muted)">${r.reason}</p>
+          </div>
+        `).join('')}
+      </div>` : ''}
+
+      <div class="result-section">
+        <h3>Action Plan</h3>
+        <ul>${data.action_plan.map((a, i) => `<li><strong style="color:var(--accent)">${i+1}.</strong> ${a}</li>`).join('')}</ul>
+      </div>
+
+      <div class="result-section">
+        <h3>Role Fit Assessment</h3>
+        <p>${data.role_fit}</p>
+      </div>
+    `;
+
+    document.getElementById('resultsContent').innerHTML = html;
+  }
+
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText(fullReportText).then(() => {
+      document.getElementById('copyBtn').textContent = 'Copied!';
+      setTimeout(() => document.getElementById('copyBtn').textContent = 'Copy Full Report', 2000);
+    });
+  });
+
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    resultsSection.classList.remove('show');
+    formSection.style.display = 'block';
+    selectedFile = null;
+    fileInput.value = '';
+    fileSelected.classList.remove('show');
+    analyzeBtn.disabled = true;
+    document.getElementById('targetRole').value = '';
+    document.getElementById('experience').value = '';
+    document.getElementById('focusArea').value = '';
+  });
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.add('show');
+  }
+</script>
+
+</body>
+</html>

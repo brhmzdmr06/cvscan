@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CVScan.ai — AI-Powered CV Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0c0c;
+    --surface: #141414;
+    --border: #222;
+    --accent: #d4ff00;
+    --accent2: #ff6b35;
+    --text: #f0f0f0;
+    --muted: #666;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Noise texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 48px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    z-index: 10;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+
+  .logo span { color: var(--text); }
+
+  .nav-cta {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 10px 24px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: transform 0.15s, background 0.15s;
+    text-decoration: none;
+  }
+
+  .nav-cta:hover { background: #c4ef00; transform: translateY(-1px); }
+
+  /* Hero */
+  .hero {
+    position: relative;
+    z-index: 1;
+    padding: 120px 48px 80px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 40px;
+  }
+
+  .hero h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(72px, 10vw, 140px);
+    line-height: 0.9;
+    letter-spacing: -1px;
+    margin-bottom: 32px;
+  }
+
+  .hero h1 .highlight {
+    color: var(--accent);
+    display: block;
+  }
+
+  .hero p {
+    font-size: 18px;
+    color: #aaa;
+    max-width: 480px;
+    line-height: 1.7;
+    margin-bottom: 52px;
+    font-weight: 300;
+  }
+
+  .cta-group {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 18px 40px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    text-decoration: none;
+    display: inline-block;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(212,255,0,0.3);
+  }
+
+  .price-tag {
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  .price-tag strong {
+    color: var(--text);
+    font-size: 20px;
+  }
+
+  /* Divider line */
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: var(--border);
+    margin: 0 auto;
+    max-width: 1100px;
+    padding: 0 48px;
+  }
+
+  /* What you get */
+  .section {
+    padding: 80px 48px;
+    max-width: 1100px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 48px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .feature {
+    background: var(--bg);
+    padding: 40px 32px;
+    transition: background 0.2s;
+  }
+
+  .feature:hover { background: var(--surface); }
+
+  .feature-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    color: var(--border);
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+
+  .feature h3 {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+
+  .feature p {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* How it works */
+  .steps {
+    display: flex;
+    gap: 0;
+    position: relative;
+  }
+
+  .steps::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    height: 1px;
+    background: var(--border);
+    z-index: 0;
+  }
+
+  .step {
+    flex: 1;
+    text-align: center;
+    padding: 0 16px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .step-dot {
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    color: var(--accent);
+  }
+
+  .step h4 {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+
+  .step p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Proof / social */
+  .proof-bar {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 24px 48px;
+    display: flex;
+    align-items: center;
+    gap: 48px;
+    overflow-x: auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .proof-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .proof-item span.val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--text);
+  }
+
+  /* Bottom CTA */
+  .bottom-cta {
+    text-align: center;
+    padding: 100px 48px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .bottom-cta h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(48px, 7vw, 96px);
+    line-height: 0.95;
+    margin-bottom: 32px;
+  }
+
+  .bottom-cta h2 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  .bottom-cta p {
+    color: var(--muted);
+    margin-bottom: 40px;
+    font-size: 15px;
+  }
+
+  /* Guarantee */
+  .guarantee {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border);
+    padding: 10px 20px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 24px;
+  }
+
+  .guarantee::before {
+    content: '✓';
+    color: var(--accent);
+  }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--muted);
+    position: relative;
+    z-index: 1;
+  }
+
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+
+  @media (max-width: 640px) {
+    nav, .hero, .section, footer { padding-left: 24px; padding-right: 24px; }
+    .steps { flex-direction: column; gap: 32px; }
+    .steps::before { display: none; }
+    .proof-bar { padding: 20px 24px; gap: 24px; }
+    .bottom-cta { padding: 60px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">CV<span>Scan</span>.ai</div>
+  <a href="#analyze" class="nav-cta">Analyze My CV →</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-badge">AI-Powered · Instant · One-Time Payment</div>
+  <h1>
+    Your CV is
+    <span class="highlight">costing you</span>
+    interviews.
+  </h1>
+  <p>Upload your CV. Get a brutally honest AI analysis in 60 seconds. Know exactly what's holding you back — and how to fix it.</p>
+  <div class="cta-group">
+    <a href="#analyze" class="btn-primary">Analyze My CV — $4.99</a>
+    <div class="price-tag">One-time. <strong>No subscription.</strong> Instant results.</div>
+  </div>
+</section>
+
+<div class="proof-bar">
+  <div class="proof-item"><span class="val">60s</span> &nbsp;Analysis time</div>
+  <div class="proof-item"><span class="val">$4.99</span> &nbsp;One-time only</div>
+  <div class="proof-item"><span class="val">10+</span> &nbsp;Sections analyzed</div>
+  <div class="proof-item"><span class="val">AI</span> &nbsp;Powered by Claude</div>
+  <div class="proof-item"><span class="val">100%</span> &nbsp;Private & secure</div>
+</div>
+
+<section class="section">
+  <div class="section-label">What you get</div>
+  <div class="features-grid">
+    <div class="feature">
+      <div class="feature-num">01</div>
+      <h3>Strengths & Weaknesses</h3>
+      <p>Know exactly what's working and what's actively hurting your chances with recruiters.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">02</div>
+      <h3>ATS Score</h3>
+      <p>Most CVs never reach a human. We check if yours passes the automated filtering systems.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">03</div>
+      <h3>Keyword Gaps</h3>
+      <p>Missing industry keywords that recruiters search for. We find them and tell you which to add.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">04</div>
+      <h3>Rewrite Suggestions</h3>
+      <p>Line-by-line suggestions on how to rewrite weak bullet points into compelling achievements.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">05</div>
+      <h3>Role Fit Analysis</h3>
+      <p>Tell us the job you're targeting. We'll say whether your CV is positioned correctly for it.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">06</div>
+      <h3>Action Plan</h3>
+      <p>A prioritized list of changes — what to fix first, second, and what can wait.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">How it works</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-dot">1</div>
+      <h4>Pay once</h4>
+      <p>$4.99. No account. No subscription. Ever.</p>
+    </div>
+    <div class="step">
+      <div class="step-dot">2</div>
+      <h4>Upload your CV</h4>
+      <p>PDF format. Processed instantly, deleted after.</p>
+    </div>
+    <div class="step">
+      <div class="step-dot">3</div>
+      <h4>Add context</h4>
+      <p>Tell us the role you're targeting (optional but powerful).</p>
+    </div>
+    <div class="step">
+      <div class="step-dot">4</div>
+      <h4>Get your report</h4>
+      <p>Full analysis in under 60 seconds. Copy or download it.</p>
+    </div>
+  </div>
+</section>
+
+<section class="bottom-cta" id="analyze">
+  <h2>Stop guessing.<br><em>Start getting</em><br>interviews.</h2>
+  <p>One payment. Instant analysis. No fluff.</p>
+  <a href="upload.html" class="btn-primary">Analyze My CV — $4.99 →</a>
+  <br>
+  <div class="guarantee">100% private — your CV is never stored or shared</div>
+</section>
+
+<footer>
+  <div>© 2025 CVScan.ai</div>
+  <div style="display:flex;gap:24px;">
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+    <a href="mailto:hello@cvscan.ai">Contact</a>
+  </div>
+</footer>
+
+</body>
+</html>
