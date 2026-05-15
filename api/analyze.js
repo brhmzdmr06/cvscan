@@ -1,8 +1,10 @@
 // api/analyze.js — Vercel Serverless Function
-// Place this file at: /api/analyze.js in your project root
+
+export const config = {
+  maxDuration: 60
+};
 
 export default async function handler(req, res) {
-  // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -18,13 +20,13 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,  // Set this in Vercel dashboard
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'pdfs-2024-09-25'  // Required for PDF support
+        'anthropic-beta': 'pdfs-2024-09-25'
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-5',
-        max_tokens: 2000,
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
         system: system,
         messages: [
           {
@@ -44,10 +46,8 @@ export default async function handler(req, res) {
     const data = await response.json();
     const text = data.content[0].text;
 
-    // Parse JSON from Claude's response
     let parsed;
     try {
-      // Strip any markdown code fences just in case
       const clean = text.replace(/```json|```/g, '').trim();
       parsed = JSON.parse(clean);
     } catch (e) {
